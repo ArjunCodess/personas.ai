@@ -1,4 +1,5 @@
 from core.data_cleaning import clean_data
+from core.byte_pair_encoding import train_tokenizer
 import sys
 import os
 from pathlib import Path
@@ -17,7 +18,8 @@ def check_directories():
         base_dir / "data",
         base_dir / "data" / "whatsapp",
         base_dir / "data" / "telegram",
-        base_dir / "output"
+        base_dir / "output",
+        base_dir / "output" / "tokenizer"
     ]
     
     for directory in dirs_to_check:
@@ -27,11 +29,18 @@ def check_directories():
 
 def main():
     check_directories()
-    
     display_instructions()
+    
+    print("\n=== Personas.AI Language Model Training Pipeline ===")
+    print("This program will extract chat data and train a tokenizer.")
+    
+    # STEP 1: Extract Chat Data
+    print("\n--- STEP 1: Extract Chat Data ---")
     
     if len(sys.argv) > 1:
         username = sys.argv[1]
+        whatsapp_username = username
+        telegram_username = username
     else:
         # make sure they reference to the same user
         whatsapp_username = input("[WHATSAPP] Enter username to extract messages for: ")
@@ -68,6 +77,26 @@ def main():
         print("1. The username is correct (case-insensitive matching is used)")
         print("2. Chat files are in the correct directories")
         print("3. The chat files contain messages from this user")
+        
+        # Exit if no messages found as we can't proceed to training
+        print("\nExiting as no messages were found. Please try again.")
+        return
+    
+    # STEP 2: TRAIN TOKENIZER
+    print("\n--- STEP 2: TRAIN TOKENIZER ---")
+    
+    # Use default combined_text.txt
+    input_file = None
+    
+    # Ask for vocabulary size
+    vocab_size = input("Enter vocabulary size (default: 1024): ").strip()
+    vocab_size = int(vocab_size) if vocab_size.isdigit() else 1024
+    
+    # Train the tokenizer
+    tokenizer = train_tokenizer(input_file=input_file, vocab_size=vocab_size)
+    print("\nTokenizer training complete!")
+    print("\n=== Language Model Training Pipeline Complete ===")
+    print("You can now use the tokenizer for training your language model.")
 
 if __name__ == "__main__":
     main()

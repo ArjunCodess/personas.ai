@@ -15,6 +15,7 @@ def clean_data(whatsapp_username, telegram_username, chat_types=None):
     Returns:
         tuple: (List of messages from the specified users, Total character count)
     """
+    
     if not whatsapp_username and not telegram_username:
         raise ValueError("At least one username parameter is required")
     
