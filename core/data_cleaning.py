@@ -5,7 +5,7 @@ from scripts.read_telegram_chat import read_telegram_chat
 
 def clean_data(whatsapp_username, telegram_username, chat_types=None):
     """
-    Process chat data and extract messages for specific users.
+    Process chat data and extract messages for all users and specific users.
     
     Args:
         whatsapp_username (str): The WhatsApp username to filter messages for
@@ -13,7 +13,7 @@ def clean_data(whatsapp_username, telegram_username, chat_types=None):
         chat_types (list): List of chat types to process ('whatsapp', 'telegram', or both)
     
     Returns:
-        tuple: (List of messages from the specified users, Total character count)
+        tuple: (List of messages from the specified users, Total character count for user messages)
     """
     
     if not whatsapp_username and not telegram_username:
@@ -45,9 +45,14 @@ def clean_data(whatsapp_username, telegram_username, chat_types=None):
                 all_chats[f"telegram_{file_name}"] = read_telegram_chat(file)
     
     user_messages = []
+    all_messages = []
     
     for chat_id, chat_df in all_chats.items():
         try:
+            # collect all messages for pre-training
+            all_messages.extend(chat_df['message'].tolist())
+            
+            # filter messages for specific users (for fine-tuning)
             if chat_id.startswith('whatsapp_') and whatsapp_username:
                 user_rows = chat_df[chat_df['sender'].str.lower() == whatsapp_username.lower()]
             elif chat_id.startswith('telegram_') and telegram_username:
@@ -60,9 +65,16 @@ def clean_data(whatsapp_username, telegram_username, chat_types=None):
         except Exception as e:
             print(f"Error processing chat {chat_id}: {str(e)}")
     
-    user_file = output_directory / "combined_text.txt"
+    # save all messages to combined_text.txt for pre-training
+    combined_file = output_directory / "combined_text.txt"
+    with open(combined_file, "w", encoding="utf-8") as f:
+        f.write(" ".join(all_messages))
+    
+    # save user-specific messages to text file
+    user_filename = f"{whatsapp_username}-{telegram_username}-messages.txt"
+    user_file = output_directory / user_filename
     with open(user_file, "w", encoding="utf-8") as f:
-        f.write(" ".join(user_messages))
+        f.write("\n".join(user_messages))
     
     total_chars = sum(len(msg) for msg in user_messages)
     
